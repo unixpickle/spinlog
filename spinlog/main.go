@@ -6,6 +6,7 @@ import (
 	"github.com/unixpickle/spinlog"
 	"io"
 	"os"
+	"os/user"
 	"strconv"
 	"strings"
 )
@@ -19,7 +20,7 @@ func main() {
 		"max line size for buffering (-1 means no line buffering)")
 	
 	var owner string
-	flag.StringVar(&owner, "owner", "", "uid:gid owner for file")
+	flag.StringVar(&owner, "owner", "", "uid:gid or username owner for file")
 	
 	var dirPath string
 	flag.StringVar(&dirPath, "dir", ".", "directory for log files")
@@ -29,16 +30,11 @@ func main() {
 	
 	flag.Parse()
 	
-	uid, gid, enable, ok := parseOwner(owner)
-	if !ok {
+	cfg := *new(spinlog.Config)
+	if !parseOwner(owner, &cfg) {
 		fmt.Println("Invalid owner:", owner)
 		os.Exit(1)
 	}
-	
-	cfg := *new(spinlog.Config)
-	cfg.SetOwner = enable
-	cfg.UID = uid
-	cfg.GID = gid
 	cfg.SetPerm = (*perms != -1)
 	cfg.Perm = *perms
 	cfg.LogDir.Directory = dirPath
@@ -60,23 +56,61 @@ func main() {
 	io.Copy(writer, os.Stdin)
 }
 
-func parseOwner(str string) (uid int, gid int, enable bool, ok bool) {
-	if str == "" {
-		return 0, 0, false, true
+func parseOwner(str string, cfg *spinlog.Config) bool {
+	if parseOwnerNum(str, cfg); ok {
+		return true
 	}
+	
+	// Look up the named user
+	info, _ := user.Lookup(str)
+	if info == nil {
+		return false
+	}
+	
+	// Attempt to parse UID and GID as numbers
+	uid, err := strconv.Atoi(info.Uid)
+	if err != nil {
+		return false
+	}
+	gid, err := strconv.Atoi(info.Gid)
+	if err != nil {
+		return false
+	}
+	
+	// Set info on configuration
+	cfg.SetOwner = true
+	cfg.UID = uid
+	cfg.GID = gid
+	return true
+}
+
+func parseOwnerNum(str string, cfg *spinlog.Config) bool {
+	if str == "" {
+		// Empty string means use default
+		return true
+	}
+	
+	// If the string is not : separated, it's invalid.
 	idx := strings.Index(str, ":")
 	if idx < 0 {
-		return 0, 0, false, false
+		return false
 	}
 	uidStr := str[0:idx]
 	gidStr := str[idx+1:]
+	
+	// Parse UID and GID strings
 	uid, err := strconv.Atoi(uidStr)
 	if err != nil {
-		return 0, 0, false, false
+		return false
 	}
 	gid, err = strconv.Atoi(gidStr)
 	if err != nil {
-		return 0, 0, false, false
+		return false
 	}
-	return uid, gid, true, true
+	
+	// Set info on configuration
+	cfg.SetOwner = true
+	cfg.UID = uid
+	cfg.GID = gid
+	return true
 }
