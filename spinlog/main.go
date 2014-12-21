@@ -57,7 +57,7 @@ func main() {
 }
 
 func parseOwner(str string, cfg *spinlog.Config) bool {
-	if parseOwnerNum(str, cfg); ok {
+	if parseOwnerNum(str, cfg) {
 		return true
 	}
 	
@@ -103,7 +103,7 @@ func parseOwnerNum(str string, cfg *spinlog.Config) bool {
 	if err != nil {
 		return false
 	}
-	gid, err = strconv.Atoi(gidStr)
+	gid, err := strconv.Atoi(gidStr)
 	if err != nil {
 		return false
 	}

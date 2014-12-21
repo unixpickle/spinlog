@@ -1,6 +1,20 @@
 # spinlog
 
-**spinlog** will be a simple API for configurable log rotation. It will also include the ability to temporarily intercept a log stream.
+**spinlog** is a simple API and command-line tool for rotating logs.
+
+# Installing
+
+You can install the spinlog API as follows:
+
+    go get github.com/unixpickle/spinlog
+
+Once you have this library, you may also wish to use the `spinlog` utility command. You can install it using this command:
+
+    go install github.com/unixpickle/spinlog/spinlog
+
+Now you can run the `spinlog` command. For help and usage, see
+
+    spinlog -h
 
 # License
 
