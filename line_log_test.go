@@ -12,7 +12,6 @@ import (
 func TestLineSingleFile(t *testing.T) {
 	cfg := *new(LineConfig)
 	cfg.MaxLineSize = 100
-	cfg.Prefix = "yo"
 	cfg.MaxCount = 1
 	cfg.MaxSize = 100
 	verifyLineLog(t, cfg, []string{"hey\nthere\nbro\nyo!"},
@@ -24,7 +23,6 @@ func TestLineSingleFile(t *testing.T) {
 func TestLineSingleRotate(t *testing.T) {
 	cfg := *new(LineConfig)
 	cfg.MaxLineSize = 4
-	cfg.Prefix = "yo"
 	cfg.MaxCount = 2
 	cfg.MaxSize = 5
 	verifyLineLog(t, cfg, []string{"hey\n", "yay\n"},
@@ -38,7 +36,6 @@ func TestLineSingleRotate(t *testing.T) {
 func TestLineOverflow(t *testing.T) {
 	cfg := *new(LineConfig)
 	cfg.MaxLineSize = 3
-	cfg.Prefix = "yo"
 	cfg.MaxCount = 2
 	cfg.MaxSize = 5
 	verifyLineLog(t, cfg, []string{"fooba\n"}, []string{"ba\n", "foo"})
@@ -54,13 +51,14 @@ func TestLineOverflow(t *testing.T) {
 
 func verifyLineLog(t *testing.T, c LineConfig, writes []string,
 	results []string) {
+	c.LogDir.Prefix = "linelog"
 	dir, err := ioutil.TempDir("", "spinlog_test")
 	if err != nil {
 		t.Error("Failed to create temporary directory:", err)
 		return
 	}
 	defer os.RemoveAll(dir)
-	c.Directory = dir
+	c.LogDir.Directory = dir
 	log, err := NewLineLog(c)
 	if err != nil {
 		t.Error("Failed to create log:", err)
@@ -79,7 +77,7 @@ func verifyLineLog(t *testing.T, c LineConfig, writes []string,
 	}
 	// Check the results
 	for i, expected := range results {
-		filePath := path.Join(dir, c.Prefix + "." + strconv.Itoa(i))
+		filePath := path.Join(dir, c.LogDir.Prefix + "." + strconv.Itoa(i))
 		if content, err := ioutil.ReadFile(filePath); err != nil {
 			t.Error("Failed to read file:", err)
 		} else if !bytes.Equal(content, []byte(expected)) {
@@ -88,7 +86,7 @@ func verifyLineLog(t *testing.T, c LineConfig, writes []string,
 	}
 	for i := 0; i < 100; i++ {
 		badIndex := strconv.Itoa(i + len(results))
-		filePath := path.Join(dir, c.Prefix + "." + badIndex)
+		filePath := path.Join(dir, c.LogDir.Prefix + "." + badIndex)
 		if _, err := ioutil.ReadFile(filePath); err == nil {
 			t.Error("File should not exist at index:", i)
 		}

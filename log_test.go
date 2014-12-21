@@ -11,7 +11,6 @@ import (
 
 func TestSingleFile(t *testing.T) {
 	cfg := *new(Config)
-	cfg.Prefix = "yo"
 	cfg.MaxCount = 1
 	cfg.MaxSize = 10
 	verifyLog(t, cfg, []string{"hey"}, []string{"hey"})
@@ -22,7 +21,6 @@ func TestSingleFile(t *testing.T) {
 
 func TestSingleRotate(t *testing.T) {
 	cfg := *new(Config)
-	cfg.Prefix = "yo"
 	cfg.MaxCount = 2
 	cfg.MaxSize = 10
 	verifyLog(t, cfg, []string{"hey"}, []string{"hey"})
@@ -36,7 +34,6 @@ func TestSingleRotate(t *testing.T) {
 
 func TestMultiRotate(t *testing.T) {
 	cfg := *new(Config)
-	cfg.Prefix = "hey"
 	cfg.MaxSize = 3
 	oldArray := []string{"fg", "cde", "9ab", "678", "345", "012"}
 	input := []string{"01", "2345", "6789abc", "d", "e", "f", "g"}
@@ -47,13 +44,14 @@ func TestMultiRotate(t *testing.T) {
 }
 
 func verifyLog(t *testing.T, c Config, writes []string, results []string) {
+	c.LogDir.Prefix = "linelog"
 	dir, err := ioutil.TempDir("", "spinlog_test")
 	if err != nil {
 		t.Error("Failed to create temporary directory:", err)
 		return
 	}
 	defer os.RemoveAll(dir)
-	c.Directory = dir
+	c.LogDir.Directory = dir
 	log, err := NewLog(c)
 	if err != nil {
 		t.Error("Failed to create log:", err)
@@ -72,7 +70,7 @@ func verifyLog(t *testing.T, c Config, writes []string, results []string) {
 	}
 	// Check the results
 	for i, expected := range results {
-		filePath := path.Join(dir, c.Prefix + "." + strconv.Itoa(i))
+		filePath := path.Join(dir, c.LogDir.Prefix + "." + strconv.Itoa(i))
 		if content, err := ioutil.ReadFile(filePath); err != nil {
 			t.Error("Failed to read file:", err)
 		} else if !bytes.Equal(content, []byte(expected)) {
@@ -81,7 +79,7 @@ func verifyLog(t *testing.T, c Config, writes []string, results []string) {
 	}
 	for i := 0; i < 100; i++ {
 		badIndex := strconv.Itoa(i + len(results))
-		filePath := path.Join(dir, c.Prefix + "." + badIndex)
+		filePath := path.Join(dir, c.LogDir.Prefix + "." + badIndex)
 		if _, err := ioutil.ReadFile(filePath); err == nil {
 			t.Error("File should not exist at index:", i)
 		}

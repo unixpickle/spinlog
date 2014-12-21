@@ -3,22 +3,18 @@ package spinlog
 import (
 	"io"
 	"os"
-	pathlib "path"
-	"sort"
-	"strconv"
 	"sync"
 )
 
 type Config struct {
-	Directory string `json:"directory"`
-	Prefix    string `json:"prefix"`
-	MaxCount  int    `json:"max_count"`
-	MaxSize   int64  `json:"max_size"`
-	SetPerm   bool   `json:"set_perm"`
-	Perm      int    `json:"perm"`
-	SetOwner  bool   `json:"set_owner"`
-	GID       int    `json:"gid"`
-	UID       int    `json:"uid"`
+	LogDir   LogDir `json:"log_dir"`
+	MaxCount int    `json:"max_count"`
+	MaxSize  int64  `json:"max_size"`
+	SetPerm  bool   `json:"set_perm"`
+	Perm     int    `json:"perm"`
+	SetOwner bool   `json:"set_owner"`
+	GID      int    `json:"gid"`
+	UID      int    `json:"uid"`
 }
 
 type Log struct {
@@ -81,14 +77,13 @@ func (r *Log) rotate() error {
 	}
 
 	// Attempt to rotate files
-	err := rotateFiles(r.config.Directory, r.config.Prefix,
-		r.config.MaxCount)
+	err := r.config.LogDir.Rotate(r.config.MaxCount)
 	if err != nil {
 		return err
 	}
 
 	// Open a new log file
-	newPath := logFilePath(r.config.Directory, r.config.Prefix, 0)
+	newPath := r.config.LogDir.FilePath(0)
 	flags := os.O_RDWR | os.O_CREATE | os.O_EXCL
 	perm := 0600
 	if r.config.SetPerm {
@@ -111,104 +106,46 @@ func (r *Log) rotate() error {
 	return nil
 }
 
-func (r *Log) writeInternal(p []byte) (int, error) {
+func (l *Log) writeInternal(p []byte) (int, error) {
 	// Make sure we are not closed
-	if r.file == nil {
+	if l.file == nil {
 		return 0, io.ErrClosedPipe
 	}
 
-	// Split up the bytes as necessary in order to avoid overflowing a log file.
+	// Write and rotate as many times as needed.
 	written := 0
-	for {
-		remaining := int64(len(p))
-		space, err := r.freeSpace()
+	for len(p) != 0 {
+		toWrite, newP, err := l.splitBuffer(p)
+		p = newP
 		if err != nil {
 			return written, err
 		}
-
-		if space >= remaining {
-			// There is enough space to write the entire thing.
-			w, err := r.file.Write(p)
-			written += w
-			if err != nil {
-				return written, err
-			}
-			break
-		}
-
-		// Split up the data
-		w, err := r.file.Write(p[0:int(space)])
+				
+		w, err := l.file.Write(toWrite)
 		written += w
 		if err != nil {
 			return written, err
 		}
-		if err := r.rotate(); err != nil {
-			return written, err
+		
+		if len(p) != 0 {
+			if err := l.rotate(); err != nil {
+				return written, err
+			}
 		}
-		p = p[int(space):]
 	}
 
 	return written, nil
 }
 
-func listIdentifiers(dir, prefix string) ([]int, error) {
-	// Open the directory
-	f, err := os.Open(dir)
+func (r *Log) splitBuffer(p []byte) ([]byte, []byte, error) {
+	remaining := int64(len(p))
+	space, err := r.freeSpace()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	defer f.Close()
-
-	// Run Readdirnames again and again
-	ids := make([]int, 0)
-	prefixLen := len(prefix)
-	for {
-		names, err := f.Readdirnames(100)
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return nil, err
-		}
-		// Find identifiers in the names
-		for _, name := range names {
-			if len(name) < prefixLen+2 || name[0:prefixLen] != prefix ||
-				name[prefixLen] != '.' {
-				continue
-			}
-			num, err := strconv.Atoi(name[prefixLen+1:])
-			if err != nil {
-				continue
-			}
-			ids = append(ids, num)
-		}
+	if space >= remaining {
+		return p, []byte{}, nil
+	} else {
+		return p[0:int(space)], p[int(space):], nil
 	}
-	sort.Ints(ids)
-	return ids, nil
-}
-
-func logFilePath(dir, prefix string, id int) string {
-	basename := prefix + "." + strconv.Itoa(id)
-	return pathlib.Join(dir, basename)
-}
-
-func rotateFiles(dir, prefix string, max int) error {
-	ids, err := listIdentifiers(dir, prefix)
-	if err != nil {
-		return err
-	}
-	for i := len(ids) - 1; i >= 0; i-- {
-		id := ids[i]
-		filePath := logFilePath(dir, prefix, id)
-		if id >= max-1 {
-			if err := os.Remove(filePath); err != nil {
-				return err
-			}
-		} else {
-			newPath := logFilePath(dir, prefix, id+1)
-			if err := os.Rename(filePath, newPath); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
