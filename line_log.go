@@ -2,46 +2,46 @@ package spinlog
 
 import "bytes"
 
-type LineRotatorConfig struct {
-	RotatorConfig
+type LineConfig struct {
+	Config
 	MaxLineSize int `json:"max_line_size"`
 }
 
-type LineRotator struct {
-	*Rotator
+type LineLog struct {
+	*Log
 	lineSize int
 	line     *bytes.Buffer
 }
 
-func NewLineRotator(config LineRotatorConfig) (*LineRotator, error) {
-	if int64(config.MaxLineSize) > config.MaxSize {
+func NewLineLog(c LineConfig) (*LineLog, error) {
+	if int64(c.MaxLineSize) > c.MaxSize {
 		return nil, ErrBadConfig
 	}
-	rot, err := NewRotator(config.RotatorConfig)
+	rot, err := NewLog(c.Config)
 	if err != nil {
 		return nil, err
 	}
-	return &LineRotator{rot, config.MaxLineSize, new(bytes.Buffer)}, nil
+	return &LineLog{rot, c.MaxLineSize, new(bytes.Buffer)}, nil
 }
 
-func (l *LineRotator) Close() error {
+func (l *LineLog) Close() error {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
-	
+
 	// Return the flush error only if some other error doesn't occur
 	// simultaneously.
 	var flushErr error
 	if l.line.Len() > 0 {
 		flushErr = l.flushLine()
 	}
-	
+
 	if err := l.closeInternal(); err != nil {
 		return err
 	}
 	return flushErr
 }
 
-func (l *LineRotator) Write(p []byte) (int, error) {
+func (l *LineLog) Write(p []byte) (int, error) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	for i, b := range p {
@@ -56,7 +56,7 @@ func (l *LineRotator) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func (l *LineRotator) flushLine() error {
+func (l *LineLog) flushLine() error {
 	rem, err := l.freeSpace()
 	if err != nil {
 		return err
