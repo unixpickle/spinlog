@@ -2,11 +2,6 @@ package spinlog
 
 import "bytes"
 
-type LineConfig struct {
-	Config
-	MaxLineSize int `json:"max_line_size"`
-}
-
 type LineLog struct {
 	*Log
 	lineSize int
