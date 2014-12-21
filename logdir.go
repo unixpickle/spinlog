@@ -42,7 +42,7 @@ func (l LogDir) List() ([]int, error) {
 		} else if err != nil {
 			return nil, err
 		}
-		
+
 		// Find identifiers in the names
 		for _, name := range names {
 			if id, ok := l.parseId(name); ok {
@@ -57,7 +57,7 @@ func (l LogDir) List() ([]int, error) {
 // Rotate perfroms manual log rotation on a given directory.
 // The max argument determines how many log files should be allowed to exist at
 // once, including the 0 file which will not exist after this call.
-// For example, if the prefix is "foo", max is 3, and the directory contains 
+// For example, if the prefix is "foo", max is 3, and the directory contains
 // files called ["foo.0", "foo.1", "foo.2", "foo.3", "foo.4", "foobar"], this
 // will delete "foo.2", "foo.3", and "foo.4". It will rename "foo.1" to "foo.2"
 // and "foo.0" to "foo.1".
@@ -78,7 +78,7 @@ func (l LogDir) Rotate(max int) error {
 				return err
 			}
 		} else {
-			newPath := l.FilePath(id+1)
+			newPath := l.FilePath(id + 1)
 			if err := os.Rename(filePath, newPath); err != nil {
 				return err
 			}

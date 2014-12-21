@@ -20,7 +20,7 @@ func TestLogDirList(t *testing.T) {
 	}
 	idx := 0
 	for i := 0; i < 1000; i++ {
-		if (i + 1) % 33 == 0 {
+		if (i+1)%33 == 0 {
 			continue
 		}
 		if list[idx] != i {
@@ -52,7 +52,7 @@ func TestLogDirRotate(t *testing.T) {
 	}
 	idx := 0
 	for i := 1; i < 1000; i++ {
-		if i % 33 == 0 {
+		if i%33 == 0 {
 			continue
 		}
 		if list[idx] != i {
@@ -71,10 +71,10 @@ func createTempDir() (string, error) {
 		return "", err
 	}
 	for i := 0; i < 1000; i++ {
-		if (i + 1) % 33 == 0 {
+		if (i+1)%33 == 0 {
 			continue
 		}
-		name := path.Join(dir, "log." + strconv.Itoa(i))
+		name := path.Join(dir, "log."+strconv.Itoa(i))
 		f, err := os.Create(name)
 		if err != nil {
 			os.RemoveAll(dir)

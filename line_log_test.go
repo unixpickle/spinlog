@@ -43,7 +43,7 @@ func TestLineOverflow(t *testing.T) {
 	verifyLineLog(t, cfg, []string{"foobarbaz\n"}, []string{"baz\n", "bar"})
 	verifyLineLog(t, cfg, []string{"ab\naoeu\n"},
 		[]string{"aoeu\n", "ab\n"})
-	
+
 	cfg.MaxCount = 3
 	verifyLineLog(t, cfg, []string{"ab\naoeug\n"},
 		[]string{"ug\n", "aoe", "ab\n"})
@@ -77,7 +77,7 @@ func verifyLineLog(t *testing.T, c LineConfig, writes []string,
 	}
 	// Check the results
 	for i, expected := range results {
-		filePath := path.Join(dir, c.LogDir.Prefix + "." + strconv.Itoa(i))
+		filePath := path.Join(dir, c.LogDir.Prefix+"."+strconv.Itoa(i))
 		if content, err := ioutil.ReadFile(filePath); err != nil {
 			t.Error("Failed to read file:", err)
 		} else if !bytes.Equal(content, []byte(expected)) {
@@ -86,7 +86,7 @@ func verifyLineLog(t *testing.T, c LineConfig, writes []string,
 	}
 	for i := 0; i < 100; i++ {
 		badIndex := strconv.Itoa(i + len(results))
-		filePath := path.Join(dir, c.LogDir.Prefix + "." + badIndex)
+		filePath := path.Join(dir, c.LogDir.Prefix+"."+badIndex)
 		if _, err := ioutil.ReadFile(filePath); err == nil {
 			t.Error("File should not exist at index:", i)
 		}

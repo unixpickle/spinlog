@@ -109,13 +109,13 @@ func (l *Log) writeInternal(p []byte) (int, error) {
 		if err != nil {
 			return written, err
 		}
-				
+
 		w, err := l.file.Write(toWrite)
 		written += w
 		if err != nil {
 			return written, err
 		}
-		
+
 		if len(p) != 0 {
 			if err := l.rotate(); err != nil {
 				return written, err

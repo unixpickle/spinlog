@@ -18,18 +18,18 @@ func main() {
 		"octal file permissions for log files")
 	lineSize := flag.Int("line", -1,
 		"max line size for buffering (-1 means no line buffering)")
-	
+
 	var owner string
 	flag.StringVar(&owner, "owner", "", "uid:gid or username owner for file")
-	
+
 	var dirPath string
 	flag.StringVar(&dirPath, "dir", ".", "directory for log files")
-	
+
 	var prefix string
 	flag.StringVar(&prefix, "prefix", "log", "prefix for log files")
-	
+
 	flag.Parse()
-	
+
 	cfg := *new(spinlog.Config)
 	if !parseOwner(owner, &cfg) {
 		fmt.Println("Invalid owner:", owner)
@@ -60,13 +60,13 @@ func parseOwner(str string, cfg *spinlog.Config) bool {
 	if parseOwnerNum(str, cfg) {
 		return true
 	}
-	
+
 	// Look up the named user
 	info, _ := user.Lookup(str)
 	if info == nil {
 		return false
 	}
-	
+
 	// Attempt to parse UID and GID as numbers
 	uid, err := strconv.Atoi(info.Uid)
 	if err != nil {
@@ -76,7 +76,7 @@ func parseOwner(str string, cfg *spinlog.Config) bool {
 	if err != nil {
 		return false
 	}
-	
+
 	// Set info on configuration
 	cfg.SetOwner = true
 	cfg.UID = uid
@@ -89,7 +89,7 @@ func parseOwnerNum(str string, cfg *spinlog.Config) bool {
 		// Empty string means use default
 		return true
 	}
-	
+
 	// If the string is not : separated, it's invalid.
 	idx := strings.Index(str, ":")
 	if idx < 0 {
@@ -97,7 +97,7 @@ func parseOwnerNum(str string, cfg *spinlog.Config) bool {
 	}
 	uidStr := str[0:idx]
 	gidStr := str[idx+1:]
-	
+
 	// Parse UID and GID strings
 	uid, err := strconv.Atoi(uidStr)
 	if err != nil {
@@ -107,7 +107,7 @@ func parseOwnerNum(str string, cfg *spinlog.Config) bool {
 	if err != nil {
 		return false
 	}
-	
+
 	// Set info on configuration
 	cfg.SetOwner = true
 	cfg.UID = uid

@@ -70,7 +70,7 @@ func verifyLog(t *testing.T, c Config, writes []string, results []string) {
 	}
 	// Check the results
 	for i, expected := range results {
-		filePath := path.Join(dir, c.LogDir.Prefix + "." + strconv.Itoa(i))
+		filePath := path.Join(dir, c.LogDir.Prefix+"."+strconv.Itoa(i))
 		if content, err := ioutil.ReadFile(filePath); err != nil {
 			t.Error("Failed to read file:", err)
 		} else if !bytes.Equal(content, []byte(expected)) {
@@ -79,7 +79,7 @@ func verifyLog(t *testing.T, c Config, writes []string, results []string) {
 	}
 	for i := 0; i < 100; i++ {
 		badIndex := strconv.Itoa(i + len(results))
-		filePath := path.Join(dir, c.LogDir.Prefix + "." + badIndex)
+		filePath := path.Join(dir, c.LogDir.Prefix+"."+badIndex)
 		if _, err := ioutil.ReadFile(filePath); err == nil {
 			t.Error("File should not exist at index:", i)
 		}
